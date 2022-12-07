@@ -1,0 +1,1 @@
+cmd_/media/sf_VM_shared/test/Module.symvers := sed 's/\.ko$$/\.o/' /media/sf_VM_shared/test/modules.order | scripts/mod/modpost -m -a  -o /media/sf_VM_shared/test/Module.symvers -e -i Module.symvers   -T -

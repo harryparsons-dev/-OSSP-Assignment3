@@ -1,0 +1,1 @@
+cmd_/media/sf_VM_shared/test/charDeviceDriver.ko := ld -r  -m elf_x86_64  --build-id=sha1  -T scripts/module.lds -o /media/sf_VM_shared/test/charDeviceDriver.ko /media/sf_VM_shared/test/charDeviceDriver.o /media/sf_VM_shared/test/charDeviceDriver.mod.o;  true
