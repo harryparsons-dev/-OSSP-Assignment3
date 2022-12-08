@@ -1,2 +1,2 @@
-/media/sf_VM_shared/test/charDeviceDriver.o
+/media/sf_VM_shared/ASS3/charDeviceDriver.o
 

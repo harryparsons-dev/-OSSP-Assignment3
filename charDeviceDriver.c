@@ -9,17 +9,31 @@
 #include <asm/uaccess.h> /* for put_user */
 #include <charDeviceDriver.h>
 #include <linux/slab.h>
+#include <linux/list.h>
 
 MODULE_LICENSE("GPL");
 
-typedef struct node
+typedef struct _node
 {
 	char *text;
-	struct node *next;
+	struct _node *next;
 } node;
 
-node *head;
-head = NULL;
+// struct my_list
+// {
+// 	struct list_head list;
+// 	char *str;
+// };
+// // struct my_list new_node;
+
+// struct mystruct first = {
+// 	.str = "Im at the head",
+// 	.list = LIST_HEAD_INIT(first.mylist)};
+
+// INIT_LIST_HEAD(&new_node.list);
+
+// node *head = NULL;
+
 // node *head = NULL;
 
 /*
@@ -75,11 +89,11 @@ int init_module(void)
 	}
 
 	printk(KERN_INFO "I was assigned major number %d. To talk to\n", Major);
-	printk(KERN_INFO "the driver, create a dev file with\n");
-	printk(KERN_INFO "'mknod /dev/%s c %d 0'.\n", DEVICE_NAME, Major);
-	printk(KERN_INFO "Try various minor numbers. Try to cat and echo to\n");
-	printk(KERN_INFO "the device file.\n");
-	printk(KERN_INFO "Remove the device file and module when done.\n");
+	// printk(KERN_INFO "the driver, create a dev file with\n");
+	// printk(KERN_INFO "'mknod /dev/%s c %d 0'.\n", DEVICE_NAME, Major);
+	// printk(KERN_INFO "Try various minor numbers. Try to cat and echo to\n");
+	// printk(KERN_INFO "the device file.\n");
+	// printk(KERN_INFO "Remove the device file and module when done.\n");
 
 	return SUCCESS;
 }
@@ -97,37 +111,56 @@ void cleanup_module(void)
  * Methods
  */
 
-node *create_node(int data)
+void insert_msg(node *head, char *msg)
 {
-	node *new_node = kmalloc(sizeof(node), GFP_KERNEL);
-	new_node->data = data;
+
+	node *new_node = (node *)kmalloc(sizeof(node), GFP_KERNEL);
+	// node *curr_ptr = head;
+
+	new_node->text = msg;
 	new_node->next = NULL;
-	return new_node;
-}
-
-void insert_node(node **head, node *new_node)
-{
-	new_node->next = *head;
-	*head = new_node;
-}
-
-node *remove_node(node **head)
-{
-	node *removed_node;
-	remove_node = *head;
-	*head = (*head)->next;
-	return removed_node;
-}
-void free_list(node *head)
-{
-	node *current = head;
-	while (current != NULL)
+	if (head == NULL)
 	{
-		node *temp = current;
-		current = current->next;
-		kfree(temp);
+		head->next = new_node;
 	}
+	else
+	{
+		node *curr_ptr = head;
+
+		while (curr_ptr->next != NULL)
+		{
+			// memcpy(current->next, current, sizeof(node));
+			curr_ptr = curr_ptr->next;
+		}
+		curr_ptr->next = new_node;
+	}
+	return;
 }
+node *getFirst(node *head)
+{
+	head = head->next;
+	// head = *head->next;
+	// kfree(head);
+	return head;
+}
+
+// node *remove_node(node **head)
+// {
+// 	node *removed_node;
+// 	remove_node = *head;
+// 	*head = (*head)->next;
+// 	return removed_node;
+// }
+// void free_list(node *head)
+// {
+// 	node *current = head;
+// 	while (current != NULL)
+// 	{
+// 		node *temp = current;
+// 		current = current->next;
+// 		kfree(temp);
+// 	}
+// }
 
 /*
  * Called when a process tries to open the device file, like
@@ -136,7 +169,7 @@ void free_list(node *head)
 
 static int device_open(struct inode *inode, struct file *file)
 {
-
+	// node *text = getFirst(head);
 	mutex_lock(&devLock);
 	if (Device_Open)
 	{
@@ -146,6 +179,7 @@ static int device_open(struct inode *inode, struct file *file)
 	Device_Open++;
 	mutex_unlock(&devLock);
 	// sprintf(msg, "I already told you %d times Hello world!\n", counter++);
+	// sprintf(msg, (text->text));
 	try_module_get(THIS_MODULE);
 
 	return SUCCESS;
@@ -177,13 +211,20 @@ static ssize_t device_read(struct file *filp, /* see include/linux/fs.h   */
 {
 	/* result of function calls */
 	int result;
+	node *MSG = getFirst(head);
+	char *msg2 = MSG->text;
 
+	// strcpy(msg2, MSG->text);
 	/*
 	 * Actually put the data into the buffer
 	 */
-	if (strlen(msg) + 1 < length)
-		length = strlen(msg) + 1;
-	result = copy_to_user(buffer, msg, length);
+	if (strlen(msg2) + 1 < length)
+	{
+		length = strlen(msg2) + 1;
+	}
+	printk(KERN_INFO "From the list {%s}", msg2);
+	result = copy_to_user(buffer, msg2, length);
+
 	msgCount = msgCount - 1;
 	if (result > 0)
 		return -EFAULT; /* copy failed */
@@ -199,11 +240,14 @@ device_write(struct file *filp, const char *buff, size_t len, loff_t *off)
 {
 	if ((msgCount < 1000) && ((sizeof(char) * len) < 4 * 1024))
 	{
-		insert_node(&head, create_node(1));
+
 		sprintf(msg, "%s(%zu letters)", buff, len);
-		printk(KERN_INFO "Recived message length: %zu from user", len);
+		insert_msg(head, "testing this list");
+		insert_msg(head, "2nd element");
+		printk(KERN_INFO "Adding {%s} to the list", msg);
 		msgCount = msgCount + 1;
 		return len;
+		// return -1;
 	}
 	else if (msgCount >= 1000)
 	{
