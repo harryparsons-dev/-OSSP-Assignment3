@@ -13,29 +13,19 @@
 
 MODULE_LICENSE("GPL");
 
-typedef struct _node
+struct k_list
 {
+	struct list_head list;
 	char *text;
-	struct _node *next;
-} node;
+};
 
-// struct my_list
-// {
-// 	struct list_head list;
-// 	char *str;
-// };
-// // struct my_list new_node;
+static LIST_HEAD(Head_node);
+struct list_head *head;
+static struct k_list *node;
 
-// struct mystruct first = {
-// 	.str = "Im at the head",
-// 	.list = LIST_HEAD_INIT(first.mylist)};
-
-// INIT_LIST_HEAD(&new_node.list);
-
-// node *head = NULL;
-
-// node *head = NULL;
-
+int temp;
+// char *msg;
+//  INIT_LIST_HEAD(Head_node);
 /*
  * This function is called whenever a process tries to do an ioctl on our
  * device file. We get two extra parameters (additional to the inode and file
@@ -50,33 +40,9 @@ typedef struct _node
 DEFINE_MUTEX(devLock);
 // static int counter = 0;
 
-// static long device_ioctl(struct file *file,		 /* see include/linux/fs.h */
-// 						 unsigned int ioctl_num, /* number and param for ioctl */
-// 						 unsigned long ioctl_param)
-// {
-
-// 	/*
-// 	 * Switch according to the ioctl called
-// 	 */
-
-// 	/* 	    return 0; */
-// 	/* can pass integer as return value */
-// 	return 0;
-// 	/* no operation defined - return failure */
-// }
-
 /*
  * This function is called when the module is loaded
  */
-// char **strArr()
-// {
-// 	char **arr = malloc(sizeof(char *) * 1000);
-// 	for (int i = 0; i < 1000; i++)
-// 	{
-// 		arr[i] = malloc(4 * 1024);
-// 	}
-// 	return arr;
-// }
 
 int init_module(void)
 {
@@ -89,11 +55,14 @@ int init_module(void)
 	}
 
 	printk(KERN_INFO "I was assigned major number %d. To talk to\n", Major);
-	// printk(KERN_INFO "the driver, create a dev file with\n");
-	// printk(KERN_INFO "'mknod /dev/%s c %d 0'.\n", DEVICE_NAME, Major);
-	// printk(KERN_INFO "Try various minor numbers. Try to cat and echo to\n");
-	// printk(KERN_INFO "the device file.\n");
-	// printk(KERN_INFO "Remove the device file and module when done.\n");
+	printk(KERN_INFO "the driver, create a dev file with\n");
+	printk(KERN_INFO "'mknod /dev/%s c %d 0'.\n", DEVICE_NAME, Major);
+	printk(KERN_INFO "Try various minor numbers. Try to cat and echo to\n");
+	printk(KERN_INFO "the device file.\n");
+	printk(KERN_INFO "Remove the device file and module when done.\n");
+
+	head = kmalloc(sizeof(struct list_head *), GFP_KERNEL);
+	INIT_LIST_HEAD(head);
 
 	return SUCCESS;
 }
@@ -104,6 +73,9 @@ int init_module(void)
 void cleanup_module(void)
 {
 	/*  Unregister the device */
+	kfree(head);
+	kfree(node);
+	kfree(msg);
 	unregister_chrdev(Major, DEVICE_NAME);
 }
 
@@ -111,38 +83,39 @@ void cleanup_module(void)
  * Methods
  */
 
-void insert_msg(node *head, char *msg)
-{
+// void insert_msg(node *head, char *msg)
+// {
 
-	node *new_node = (node *)kmalloc(sizeof(node), GFP_KERNEL);
-	// node *curr_ptr = head;
+// 	node *new_node = (node *)kmalloc(sizeof(node), GFP_KERNEL);
+// 	// node *curr_ptr = head;
 
-	new_node->text = msg;
-	new_node->next = NULL;
-	if (head == NULL)
-	{
-		head->next = new_node;
-	}
-	else
-	{
-		node *curr_ptr = head;
+// 	new_node->text = msg;
+// 	new_node->next = NULL;
+// 	if (head == NULL)
+// 	{
+// 		head->next = new_node;
+// 	}
+// 	else
+// 	{
+// 		node *curr_ptr = head;
 
-		while (curr_ptr->next != NULL)
-		{
-			// memcpy(current->next, current, sizeof(node));
-			curr_ptr = curr_ptr->next;
-		}
-		curr_ptr->next = new_node;
-	}
-	return;
-}
-node *getFirst(node *head)
-{
-	head = head->next;
-	// head = *head->next;
-	// kfree(head);
-	return head;
-}
+// 		while (curr_ptr->next != NULL)
+// 		{
+// 			// memcpy(current->next, current, sizeof(node));
+// 			curr_ptr = curr_ptr->next;
+// 		}
+// 		curr_ptr->next = new_node;
+// 	}
+// 	return;
+// }
+
+// node *getFirst(node *head)
+// {
+// 	head = head->next;
+// 	// head = *head->next;
+// 	// kfree(head);
+// 	return head;
+// }
 
 // node *remove_node(node **head)
 // {
@@ -211,26 +184,55 @@ static ssize_t device_read(struct file *filp, /* see include/linux/fs.h   */
 {
 	/* result of function calls */
 	int result;
-	node *MSG = getFirst(head);
-	char *msg2 = MSG->text;
+	int count = 0;
+	struct k_list *temp;
+	// char *msg2 = MSG->text;
 
 	// strcpy(msg2, MSG->text);
 	/*
 	 * Actually put the data into the buffer
 	 */
-	if (strlen(msg2) + 1 < length)
+	mutex_lock(&devLock);
+	if (strlen(msg) + 1 < length)
 	{
-		length = strlen(msg2) + 1;
+		length = strlen(msg) + 1;
 	}
-	printk(KERN_INFO "From the list {%s}", msg2);
-	result = copy_to_user(buffer, msg2, length);
+	// node *q = list_first_entry(&msgStore, node, list);
+	//  printk(KERN_INFO "From the list {%s}", q->text);
 
-	msgCount = msgCount - 1;
+	list_for_each_entry(temp, head, list)
+	{
+		printk(KERN_INFO "Node %d data = %s\n", count++, temp->text);
+	}
+	printk(KERN_INFO "Total Nodes = %d\n", count);
+	if (list_empty(head))
+	{
+		mutex_unlock(&devLock);
+		return -EAGAIN;
+	}
+	else
+	{
+
+		node = list_first_entry(head, struct k_list, list);
+		msg = node->text;
+		result = copy_to_user(buffer, msg, length);
+		list_del(&node->list);
+		if (msgCount == 0)
+		{
+			// do nothing
+		}
+		else
+		{
+			msgCount = msgCount - 1;
+		}
+	}
+
 	if (result > 0)
 		return -EFAULT; /* copy failed */
 	/*
 	 * Most read functions return the number of bytes put into the buffer
 	 */
+	mutex_unlock(&devLock);
 	return length;
 }
 
@@ -238,16 +240,10 @@ static ssize_t device_read(struct file *filp, /* see include/linux/fs.h   */
 static ssize_t
 device_write(struct file *filp, const char *buff, size_t len, loff_t *off)
 {
-	if ((msgCount < 1000) && ((sizeof(char) * len) < 4 * 1024))
-	{
 
-		sprintf(msg, "%s(%zu letters)", buff, len);
-		insert_msg(head, "testing this list");
-		insert_msg(head, "2nd element");
-		printk(KERN_INFO "Adding {%s} to the list", msg);
-		msgCount = msgCount + 1;
-		return len;
-		// return -1;
+	if (sizeof(buff) > 1024)
+	{
+		return -EINVAL;
 	}
 	else if (msgCount >= 1000)
 	{
@@ -255,6 +251,22 @@ device_write(struct file *filp, const char *buff, size_t len, loff_t *off)
 	}
 	else
 	{
-		return -EINVAL;
+		mutex_lock(&devLock);
+		msg = kmalloc(10 * sizeof(char), GFP_KERNEL);
+		temp = copy_from_user(msg, buff, len);
+		//  struct node *temp_node = NULL;
+		node = kmalloc(sizeof(struct k_list), GFP_KERNEL);
+		node->text = msg;
+		// INIT_LIST_HEAD(&temp_node->list);
+		list_add_tail(&node->list, head);
+
+		msgCount = msgCount + 1;
+
+		mutex_unlock(&devLock);
 	}
+
+	return len;
+	// return -1;
+
+	// return -EINVAL;
 }

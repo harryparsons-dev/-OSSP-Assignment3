@@ -17,15 +17,15 @@ static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
  * Global variables are declared as static, so are global within the file.
  */
 struct cdev *my_cdev;
-typedef struct _node node;
-node *head = NULL;
-// node *nd_ptr = NULL;
+// typedef struct _node node;
+//  node *head = NULL;
+//   node *nd_ptr = NULL;
 dev_t dev_num;
 
 static int Major;			/* Major number assigned to our device driver */
 static int Device_Open = 0; /* Is device open?
 							 * Used to prevent multiple access to device */
-static char msg[BUF_LEN];	/* The msg the device will give when asked */
+char *msg;					/* The msg the device will give when asked */
 							// static char msgStore[1000];
 							// char *msgStore[1000];
 int msgCount = 0;
