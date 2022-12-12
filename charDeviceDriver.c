@@ -128,10 +128,10 @@ static ssize_t device_read(struct file *filp, /* see include/linux/fs.h   */
 						   loff_t *offset)
 {
 	/* result of function calls */
-	int result;
+	// int result;
 
-	int count = 0;
-	struct k_list *temp;
+	// int count = 0;
+	// struct k_list *temp;
 	struct k_list *node;
 	char *msgOut;
 	// struct k_list *node;
@@ -150,11 +150,11 @@ static ssize_t device_read(struct file *filp, /* see include/linux/fs.h   */
 	// node *q = list_first_entry(&msgStore, node, list);
 	//  printk(KERN_INFO "From the list {%s}", q->text);
 	mutex_lock(&devLock);
-	list_for_each_entry(temp, head, list)
-	{
-		printk(KERN_INFO "Node %d data = %s\n", count++, temp->text);
-	}
-	printk(KERN_INFO "Total Nodes = %d\n", count);
+	// list_for_each_entry(temp, head, list)
+	// {
+	// 	printk(KERN_INFO "Node %d data = %s\n", count++, temp->text);
+	// }
+	// printk(KERN_INFO "Total Nodes = %d\n", count);
 	if (list_empty(head))
 	{
 		mutex_unlock(&devLock);
@@ -206,7 +206,7 @@ device_write(struct file *filp, const char *buff, size_t len, loff_t *off)
 {
 	msgIn = (char *)kmalloc(sizeof(char) * BUF_LEN, GFP_KERNEL);
 	// static struct k_list *node;
-	int temp;
+
 	if (len > 4096)
 	{
 		return -EINVAL;
