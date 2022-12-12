@@ -1,6 +1,4 @@
-
-
 msg = 1;
 
-for i in range(0,1024):
+for i in range(0,4096):
     print(msg, end = '');

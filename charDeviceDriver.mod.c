@@ -29,8 +29,8 @@ static const struct modversion_info ____versions[]
 __used __section("__versions") = {
 	{ 0xe49bb82b, "module_layout" },
 	{ 0x6bc3fbc0, "__unregister_chrdev" },
-	{ 0x37a0cba, "kfree" },
 	{ 0x7a7b2bd8, "__register_chrdev" },
+	{ 0x37a0cba, "kfree" },
 	{ 0x13c49cc2, "_copy_from_user" },
 	{ 0x60f64c0d, "kmem_cache_alloc_trace" },
 	{ 0x3703b5ff, "kmalloc_caches" },
@@ -48,4 +48,4 @@ __used __section("__versions") = {
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "980384B1CC6A010B9E09B8F");
+MODULE_INFO(srcversion, "F65518711AEC75CB009D1E9");

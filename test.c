@@ -1,106 +1,45 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/proc_fs.h>
-#include <linux/sched.h>
-#include <asm/uaccess.h>
-#include <linux/slab.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
 
-int len, temp, i = 0, ret;
-char *empty = "Queue Empty  \n";
-int emp_len, flag = 1;
+#define BUFFER_LENGTH 4096          ///< The buffer length (crude but fine)
+static char receive[BUFFER_LENGTH]; ///< The receive buffer from the LKM
 
-struct k_list
+int main()
 {
-    struct list_head queue_list;
-    char *data;
-};
-static struct k_list *node;
-struct list_head *head;
-struct list_head test_head;
-int new_node = 1;
-
-char *msg;
-
-int pop_queue(struct file *filp, char *buf, size_t count, loff_t *offp)
-{
-    if (list_empty(head))
+    int ret, fd;
+    char stringToSend[BUFFER_LENGTH];
+    printf("Starting device test code example...\n");
+    fd = open("/dev/chardev", O_RDWR); // Open the device with read/write access
+    if (fd < 0)
     {
-        msg = empty;
-        if (flag == 1)
-        {
-            ret = emp_len;
-            flag = 0;
-        }
-        else if (flag == 0)
-        {
-            ret = 0;
-            flag = 1;
-        }
-        temp = copy_to_user(buf, msg, count);
-        printk(KERN_INFO "\nStack empty\n");
-        return ret;
+        perror("Failed to open the device...");
+        return errno;
     }
-    if (new_node == 1)
+    printf("Type in a short string to send to the kernel module:\n");
+    scanf("%[^\n]%*c", stringToSend); // Read in a string (with spaces)
+    printf("Writing message to the device [%s].\n", stringToSend);
+    ret = write(fd, stringToSend, strlen(stringToSend)); // Send the string to the LKM
+    if (ret < 0)
     {
-        node = list_first_entry(head, struct k_list, queue_list);
-        msg = node->data;
-        ret = strlen(msg);
-
-        new_node = 0;
-    }
-    if (count > ret)
-    {
-        count = ret;
+        perror("Failed to write the message to the device.");
+        return errno;
     }
 
-    ret = ret - count;
+    printf("Press ENTER to read back from the device...\n");
+    getchar();
 
-    temp = copy_to_user(buf, msg, count);
-    printk(KERN_INFO "\n data = %s \n", msg);
-
-    if (count == 0)
+    printf("Reading from the device...\n");
+    ret = read(fd, receive, BUFFER_LENGTH); // Read the response from the LKM
+    if (ret < 0)
     {
-        list_del(&node->queue_list);
-        new_node = 1;
+        perror("Failed to read the message from the device.");
+        return errno;
     }
-    return count;
-}
-
-int push_queue(struct file *filp, const char *buf, size_t count, loff_t *offp)
-{
-    msg = kmalloc(10 * sizeof(char), GFP_KERNEL);
-
-    temp = copy_from_user(msg, buf, count);
-
-    node = kmalloc(sizeof(struct k_list *), GFP_KERNEL);
-    node->data = msg;
-    list_add_tail(&node->queue_list, head);
-    return count;
-}
-
-struct file_operations proc_fops = {
-    read : pop_queue,
-    write : push_queue
-};
-void create_new_proc_entry(void)
-{
-    proc_create("queue", 0, NULL, &proc_fops);
-}
-
-int queue_init(void)
-{
-    create_new_proc_entry();
-    head = kmalloc(sizeof(struct list_head *), GFP_KERNEL);
-    INIT_LIST_HEAD(head);
-    emp_len = strlen(empty);
+    printf("The received message is: [%s]\n", receive);
+    printf("End of the program\n");
     return 0;
 }
-
-void queue_cleanup(void)
-{
-    remove_proc_entry("queue", NULL);
-}
-
-MODULE_LICENSE("GPL");
-module_init(queue_init);
-module_exit(queue_cleanup);

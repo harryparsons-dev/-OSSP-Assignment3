@@ -11,7 +11,7 @@ static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
 
 #define SUCCESS 0
 #define DEVICE_NAME "chardev" /* Dev name as it appears in /proc/devices   */
-#define BUF_LEN 80			  /* Max length of the message from the device */
+#define BUF_LEN 4096		  /* Max length of the message from the device */
 
 /*
  * Global variables are declared as static, so are global within the file.
@@ -25,9 +25,9 @@ dev_t dev_num;
 static int Major;			/* Major number assigned to our device driver */
 static int Device_Open = 0; /* Is device open?
 							 * Used to prevent multiple access to device */
-char *msg;					/* The msg the device will give when asked */
-							// static char msgStore[1000];
-							// char *msgStore[1000];
+// char msg[BUF_LEN];			/* The msg the device will give when asked */
+//  static char msgStore[1000];
+//  char *msgStore[1000];
 int msgCount = 0;
 
 static struct file_operations fops = {
